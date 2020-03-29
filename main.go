@@ -9,14 +9,19 @@ import (
 )
 
 func main() {
-	log.WithTime(time.Now()).Info("Starting up process")
+	formatter := &log.TextFormatter{
+		FullTimestamp: true,
+	}
+	log.SetFormatter(formatter)
+
+	log.Info("Starting up process")
 	rand.Seed(time.Now().Unix())
 
 	http.HandleFunc("/healtz", handleHealthz)
 	http.HandleFunc("/readiness", handleReadiness)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.WithTime(time.Now()).Fatalf("Process terminated: %v", err)
+		log.Fatalf("Process terminated: %v", err)
 	}
 }
 
@@ -24,7 +29,7 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	n := rand.Intn(3)
 
 	if n != 0 {
-		log.WithTime(time.Now()).Info("Imitate process problem")
+		log.Info("Imitate process problem")
 		time.Sleep(time.Second * 5)
 	}
 
