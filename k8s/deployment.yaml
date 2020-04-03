@@ -1,4 +1,3 @@
-implementation)
 kind: Deployment
 metadata:
   name: probes-demo
