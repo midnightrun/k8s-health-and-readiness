@@ -19,7 +19,7 @@ func main() {
 	log.Info("Starting up process")
 	rand.Seed(time.Now().Unix())
 
-	http.HandleFunc("/healtz", handleHealthz)
+	http.HandleFunc("/healthz", handleHealthz)
 	http.HandleFunc("/readiness", handleReadiness)
 	http.HandleFunc("/toggle", handleToggle)
 
