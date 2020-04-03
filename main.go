@@ -1,14 +1,20 @@
 package main
 
 import (
+	"html/template"
 	"math/rand"
 	"net/http"
+	"path"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 var readyToServe bool
+
+type Application struct {
+	Status bool
+}
 
 func main() {
 	formatter := &log.TextFormatter{
@@ -19,6 +25,7 @@ func main() {
 	log.Info("Starting up process")
 	rand.Seed(time.Now().Unix())
 
+	http.HandleFunc("/", handleStatus)
 	http.HandleFunc("/healthz", handleHealthz)
 	http.HandleFunc("/readiness", handleReadiness)
 	http.HandleFunc("/toggle", handleToggle)
@@ -28,7 +35,23 @@ func main() {
 	}
 }
 
+func handleStatus(w http.ResponseWriter, r *http.Request) {
+	log.Info("Handle Status ...")
+	fp := path.Join("templates", "index.html")
+
+	tmpl, err := template.ParseFiles(fp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = tmpl.Execute(w, Application{Status: readyToServe}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func handleHealthz(w http.ResponseWriter, r *http.Request) {
+	log.Info("Handle Liveness ...")
 	n := rand.Intn(3)
 
 	if n != 0 {
@@ -37,10 +60,10 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func handleReadiness(w http.ResponseWriter, r *http.Request) {
+	log.Info("Handle Readiness ...")
 	if readyToServe {
 		log.Info("Imitate processing problem")
 
@@ -49,12 +72,11 @@ func handleReadiness(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func handleToggle(w http.ResponseWriter, r *http.Request) {
+	log.Info("Handle Toggle ...")
 	readyToServe = !readyToServe
 
 	w.WriteHeader(http.StatusOK)
-	return
 }
