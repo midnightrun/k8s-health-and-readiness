@@ -3,7 +3,10 @@
     K8S Health and Readiness
 </title>
 <body>
-    <h1>Status</h1>
-    <p>The application is currently {{ if .Status }}active{{ else }}inactive{{ end }}.</p>
+    <h1>Application Status</h1>
+<ul>
+    <li>Health: {{ if .Liveness }}active{{ else }}inactice{{ end }}</li>
+    <li>Readiness: {{ if .Readiness }}ready{{ else }}not ready{{ end }}</li>
+</ul>
 </body>
 </html>

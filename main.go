@@ -2,18 +2,18 @@ package main
 
 import (
 	"html/template"
-	"math/rand"
 	"net/http"
 	"path"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-var readyToServe bool
+var liveness bool
+var readiness bool
 
 type Application struct {
-	Status bool
+	Liveness  bool
+	Readiness bool
 }
 
 func main() {
@@ -23,12 +23,15 @@ func main() {
 	log.SetFormatter(formatter)
 
 	log.Info("Starting up process")
-	rand.Seed(time.Now().Unix())
+
+	liveness = true
+	readiness = true
 
 	http.HandleFunc("/", handleStatus)
 	http.HandleFunc("/healthz", handleHealthz)
 	http.HandleFunc("/readiness", handleReadiness)
-	http.HandleFunc("/toggle", handleToggle)
+	http.HandleFunc("/toggle/healthz", handleHealthToggle)
+	http.HandleFunc("/toggle/readiness", handleReadinessToggle)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Process terminated: %v", err)
@@ -45,26 +48,14 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = tmpl.Execute(w, Application{Status: readyToServe}); err != nil {
+	if err = tmpl.Execute(w, Application{Liveness: liveness, Readiness: readiness}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	log.Info("Handle Liveness ...")
-	n := rand.Intn(3)
-
-	if n != 0 {
-		log.Info("Imitate connection problem")
-		time.Sleep(time.Second * 5)
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func handleReadiness(w http.ResponseWriter, r *http.Request) {
-	log.Info("Handle Readiness ...")
-	if readyToServe {
+	if !liveness {
 		log.Info("Imitate processing problem")
 
 		w.WriteHeader(http.StatusInternalServerError)
@@ -74,9 +65,28 @@ func handleReadiness(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func handleToggle(w http.ResponseWriter, r *http.Request) {
+func handleReadiness(w http.ResponseWriter, r *http.Request) {
+	log.Info("Handle Readiness ...")
+	if !readiness {
+		log.Info("Imitate processing problem")
+
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleHealthToggle(w http.ResponseWriter, r *http.Request) {
 	log.Info("Handle Toggle ...")
-	readyToServe = !readyToServe
+	liveness = !liveness
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func handleReadinessToggle(w http.ResponseWriter, r *http.Request) {
+	log.Info("Handle Toggle ...")
+	readiness = !readiness
 
 	w.WriteHeader(http.StatusOK)
 }
